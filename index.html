@@ -1,0 +1,51 @@
+<html>
+<head>
+<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.3/leaflet.css" />
+ <!--[if lte IE 8]>
+     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.3/leaflet.ie.css" />
+ <![endif]-->
+</head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script src="http://cdn.leafletjs.com/leaflet-0.6.3/leaflet.js"></script>
+<body>
+  <div id="map" style="width: 100%; height: 550px;">&nbsp;</div>
+  <script type="text/javascript">
+    $(function() {
+      var MAX_ZOOM = 17;
+      function ensureLayer(zoom) {
+        if (!jsonLayers[zoom - 1]) {
+            jsonLayers[zoom - 1] = L.geoJson();
+        }
+      }
+      function onTileLoad(e) {
+        var tile = (/tile.openstreetmap.org\/(.*\/.*\/.*).png/gm).exec(e.tile.src)[1].replace(/\//g, '_');
+        $.getJSON(tile + '.json', function(data) {
+            var zoom = map.getZoom();
+            ensureLayer(zoom);
+            jsonLayers[zoom - 1].addData(data);
+        });
+      };
+      var map = L.map('map').setView([0, 0], 2);
+      var jsonLayers = Array(MAX_ZOOM);
+      L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                  attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+                  maxZoom: MAX_ZOOM}).addTo(map).on('tileload', onTileLoad);
+      function refreshLayers() {
+        var zoom = map.getZoom();
+        ensureLayer(zoom);
+        for (var i = 0; i < jsonLayers.length; i++) {
+            if (i == zoom - 1) {
+                map.addLayer(jsonLayers[i]);
+            } else {
+                if (jsonLayers[i]) {
+                    map.removeLayer(jsonLayers[i]);
+                }
+            }
+        }
+      }
+      map.on('moveend', refreshLayers);
+      refreshLayers();
+    });
+  </script>
+</body>
+</html>
